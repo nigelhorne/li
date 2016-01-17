@@ -4,6 +4,7 @@ li
 Scan for duplicate files
 
 The options are:
+
     -r	recursive (look in subdirectories)
     -v	verbose
     -l	(*nix only) change file copies into links
