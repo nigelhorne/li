@@ -90,7 +90,7 @@ char *file1, *file2;
 #endif
 {
 	register FILE *fp1, *fp2;
-	register int c, d;
+	register int c;
 #ifdef	MSDOS
 #ifndef	M_I86LM
 	char filename[_MAX_FNAME];
@@ -123,6 +123,8 @@ char *file1, *file2;
 		exit(6);
 	}
 	do {
+		register int d;
+
 		c = getc(fp1);
 		d = getc(fp2);
 		if(c != d) {
@@ -603,9 +605,9 @@ static void
 free_dircontents(dp)
 struct _dircontents *dp;
 {
-	register struct _dircontents *odp;
-
 	while(dp) {
+		register struct _dircontents *odp;
+
 		if(dp->_d_entry)
 			free(dp->_d_entry);
 		dp = (odp = dp)->_d_next;
