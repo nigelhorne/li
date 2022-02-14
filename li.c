@@ -454,6 +454,13 @@ printf("%d: ", __LINE__);
 				if(rmflag) {
 					const char *candidate;
 
+					if(item->mtime > statb.st_mtime) {
+						candidate = item->name;
+						if(doit)
+							removed = 1;
+					} else
+						candidate = filename;
+
 					if(iflag) {
 						printf(", remove %s? ", candidate);
 						doit = 0;
@@ -470,13 +477,6 @@ printf("%d: ", __LINE__);
 						}
 					} else
 						doit = 1;
-
-					if(item->mtime > statb.st_mtime) {
-						candidate = item->name;
-						if(doit)
-							removed = 1;
-					} else
-						candidate = filename;
 
 					if(doit) {
 						if(unlink(candidate) < 0)
