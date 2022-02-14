@@ -462,7 +462,7 @@ printf("%d: ", __LINE__);
 						candidate = filename;
 
 					if(iflag) {
-						printf(", remove %s? ", candidate);
+						printf(".  Remove %s? ", candidate);
 						doit = 0;
 						switch(getchar()) {
 							case '\n':
