@@ -455,7 +455,7 @@ printf("%d: ", __LINE__);
 					const char *candidate;
 
 					if(iflag) {
-						putchar('?');
+						printf(", remove %s? ", candidate);
 						doit = 0;
 						switch(getchar()) {
 							case '\n':
