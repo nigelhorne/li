@@ -1,6 +1,6 @@
 /*
  * Author Nigel Horne: njh@bandsman.co.uk
- * Copyright (C) 1997-2016, Nigel Horne
+ * Copyright (C) 1997-2022, Nigel Horne
 
  * Usage is subject to licence terms.
  * The licence terms of this software are as follows:
@@ -8,7 +8,9 @@
  * All other users (including Commercial, Charity, Educational, Government)
  * must apply in writing for a licence for use from Nigel Horne at the
  * above e-mail.
-
+ *
+ * TODO:  Add a flag to remove the newer file
+ *
  * li:
  *	Find duplicate files, DOS and UNIX. The UNIX version will optionally
  *	change these duplicates into links.
@@ -49,6 +51,7 @@
 #endif
 #ifdef	__APPLE__
 #include <sys/malloc.h>
+#include <unistd.h>
 #else
 #include <malloc.h>
 #endif
@@ -223,7 +226,7 @@ const char **argv;
 	register int rflag = 0;
 	register int iflag = 0;
 	register int zeroflag = 0;
-#ifdef	__BEOS__
+#if	defined(__BEOS__) || defined(__APPLE__)
 	extern char *optarg;
 #else
 	extern const char *optarg;
@@ -317,6 +320,7 @@ const char *dirname;
 		mode_t	mode;
 #endif
 		off_t	size;
+		time_t	mtime;
 #ifdef	MSDOS
 		_vmhnd_t	v_name;
 #else
@@ -449,6 +453,7 @@ printf("%d: ", __LINE__);
 		}
 		last->next = NULL;
 		last->size = statb.st_size;
+		last->mtime = statb.st_mtime;
 #ifdef	MSDOS
 		last->v_name = vhandle = _vmalloc(strlen(filename) + 1);
 		if(vhandle == _VM_NULL) {
