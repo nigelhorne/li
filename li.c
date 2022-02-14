@@ -18,12 +18,13 @@
  * Usage:
  *	li [-i] [-v] [-l] [-r] [-0] [ -d dirname ] dirname....
  * Options:
+ *	d:	directory list
  *	r:	recursive (look in subdirectories)
  *	v:	verbose
- *	l:	(* only) change file copies into links
- *	i:	(* only) ask before changing each file into a link
+ *	i:	(*nix only) ask before changing each file into a link or deleting a file
+ *	l:	(*nix only) change file copies into links
+ *	R:	Remove the newer file(s)
  *	0:	ignore empty files
- *	d:	directory list
  *
  * 1.1 30/4/97: added the '-i' flag
  * 1.2 25/6/99:	added the '-0' flag
@@ -224,6 +225,7 @@ const char **argv;
 	register int lflag = 0;
 	register int vflag = 0;
 	register int rflag = 0;
+	register int rmflag = 0;
 	register int iflag = 0;
 	register int zeroflag = 0;
 #if	defined(__BEOS__) || defined(__APPLE__)
@@ -239,9 +241,9 @@ const char **argv;
 #endif
 
 #if	defined(MSDOS) || defined(__BEOS__)
-	while((i = getopt(argc, argv, "d:rv0")) != EOF)
+	while((i = getopt(argc, argv, "d:irRv0")) != EOF)
 #else
-	while((i = getopt(argc, argv, "d:ilrv0")) != EOF)
+	while((i = getopt(argc, argv, "d:iRlrv0")) != EOF)
 #endif
 		switch(i) {
 #if	!defined(MSDOS) && !defined(__BEOS__)
@@ -261,30 +263,37 @@ const char **argv;
 			case 'r':
 				rflag++;
 				break;
+			case 'R':
+				rmflag++;
+				break;
 			case '0':
 				zeroflag++;
 				break;
 			case '?':
 #if	defined(MSDOS)
-				cprintf("Usage: %s [-v] [-d dirname] [-r] [-0]\r\n", argv[0]);
+				cprintf("Usage: %s [-v] [-d dirname] [-r] [-R] [-0]\r\n", argv[0]);
 #elif	defined(__BEOS)
-				fprintf(stderr, "Usage: %s [-v] [-r] [ -d dirname ] [-0]\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-v] [-r] [-R] [ -d dirname ] [-0]\n", argv[0]);
 #else
-				fprintf(stderr, "Usage: %s [-i] [-v] [-l] [-r] [ -d dirname ] [-0]\n", argv[0]);
+				fprintf(stderr, "Usage: %s [-i] [-v] [-l|-R] [-r] [ -d dirname ] [-0]\n", argv[0]);
 #endif
 				return(1);
 		}
 
+	if(lflag && rmflag) {
+		fprintf(stderr, "%s, The -l and -R flags are mutually exclusive\n", argv[0]);
+		return(2);
+	}
 #ifdef	MSDOS
 	signal(SIGINT, catcher);
 #endif
 	if(*dirname)
-		li(dirname, lflag, vflag, rflag, iflag, zeroflag);
+		li(dirname, lflag, vflag, rflag, iflag, rmflag, zeroflag);
 	else if(optind == argc)
-		li(".", lflag, vflag, rflag, iflag, zeroflag);
+		li(".", lflag, vflag, rflag, iflag, rmflag, zeroflag);
 	else
 		do
-			li(argv[optind], lflag, vflag, rflag, iflag, zeroflag);
+			li(argv[optind], lflag, vflag, rflag, iflag, rmflag, zeroflag);
 		while(++optind < argc);
 
 #ifdef	MSDOS
@@ -298,7 +307,7 @@ const char **argv;
 }
 
 static void
-li(dirname, lflag, vflag, rflag, iflag, zeroflag)
+li(dirname, lflag, vflag, rflag, iflag, rmflag, zeroflag)
 const char *dirname;
 {
 #ifdef	MSDOS
@@ -307,10 +316,8 @@ const char *dirname;
 	_vmhnd_t vhandle;
 #else
 	register struct dirent *dirent;
-#ifndef	__BEOS__
+#endif
 	register int doit;
-#endif
-#endif
 	struct stat statb;
 	register DIR *dirp;
 	char filename[_MAX_DIR];
@@ -354,6 +361,8 @@ printf("%d: ", __LINE__);
 		dirname = "";
 
 	while((dirent = readdir(dirp)) != NULL) {
+		int removed = 0;
+
 #ifdef	__APPLE__
 		/* Ignore the system files held by MAC/OS */
 		if(dirent->d_name[0] == '.')
@@ -373,7 +382,7 @@ printf("%d: ", __LINE__);
 			break;
 		}
 		if(rflag && ((statb.st_mode&S_IFMT) == S_IFDIR)) {
-			li(filename, lflag, vflag, rflag, iflag, zeroflag);
+			li(filename, lflag, vflag, rflag, iflag, rmflag, zeroflag);
 			continue;
 		}
 		if((statb.st_mode&S_IFMT) != S_IFREG)
@@ -442,9 +451,51 @@ printf("%d: ", __LINE__);
 					}
 				}
 #endif	/*__BEOS__*/
+				if(rmflag) {
+					const char *candidate;
+
+					if(iflag) {
+						putchar('?');
+						doit = 0;
+						switch(getchar()) {
+							case '\n':
+								break;
+							case 'y':
+							case 'Y':
+								doit = 1;
+								/* fall through */
+							default:
+								while(getchar() != '\n')
+									;
+						}
+					} else
+						doit = 1;
+
+					if(item->mtime > statb.st_mtime) {
+						candidate = item->name;
+						if(doit)
+							removed = 1;
+					} else
+						candidate = filename;
+
+					if(doit) {
+						if(unlink(candidate) < 0)
+							perror(candidate);
+						else
+							/*
+							 * No need to check it
+							 * against anything else
+							 */
+							break;
+					}
+				}
 			}
 #endif
 		}
+
+		if(removed)
+			continue;
+
 		if(last == NULL)
 			top = last = malloc(sizeof(struct data));
 		else {
