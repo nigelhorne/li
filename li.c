@@ -410,7 +410,7 @@ printf("%d: ", __LINE__);
 				printf("%s and %s %s",
 					item->name, filename,
 					(statb.st_mode == item->mode) ? "are identical" : "differ only in mode");
-				if(statb.st_mode != item->mode) {
+				if((statb.st_mode != item->mode) && !rmflag) {
 					putchar('\n');
 					continue;
 				}
