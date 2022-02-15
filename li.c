@@ -333,6 +333,7 @@ const char *dirname;
 #else
 		const	char	*name;
 #endif
+		struct	data	*prev;
 		struct	data	*next;
 	} *top, *last;
 	register struct data *item;
@@ -454,11 +455,9 @@ printf("%d: ", __LINE__);
 				if(rmflag) {
 					const char *candidate;
 
-					if(item->mtime > statb.st_mtime) {
+					if(item->mtime > statb.st_mtime)
 						candidate = item->name;
-						if(doit)
-							removed = 1;
-					} else
+					else
 						candidate = filename;
 
 					if(iflag) {
@@ -475,8 +474,15 @@ printf("%d: ", __LINE__);
 								while(getchar() != '\n')
 									;
 						}
-					} else
+					} else {
 						doit = 1;
+						removed = 1;
+						if((item->mtime > statb.st_mtime) && item->next) {
+							item->next->prev = item->prev;
+							free(item->name);
+							free(item);
+						}
+					}
 
 					if(doit) {
 						if(unlink(candidate) < 0)
@@ -500,6 +506,7 @@ printf("%d: ", __LINE__);
 			top = last = malloc(sizeof(struct data));
 		else {
 			last->next = malloc(sizeof(struct data));
+			last->next->prev = last;
 			last = last->next;
 		}
 		last->next = NULL;
