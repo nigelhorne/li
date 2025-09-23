@@ -52,10 +52,10 @@
 #endif
 #ifdef	__APPLE__
 #include <sys/malloc.h>
-#include <unistd.h>
 #else
 #include <malloc.h>
 #endif
+#include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -217,8 +217,10 @@ catcher(void)
 #if	__i386__
 cdecl
 #endif
+int
 main(argc, argv)
-const char **argv;
+int argc;
+char *const argv[];
 {
 	register const char *dirname = "";
 	register int i;
@@ -228,11 +230,7 @@ const char **argv;
 	register int rmflag = 0;
 	register int iflag = 0;
 	register int zeroflag = 0;
-#if	defined(__BEOS__) || defined(__APPLE__)
 	extern char *optarg;
-#else
-	extern const char *optarg;
-#endif
 	extern int optind;
 #ifdef	MSDOS
 	char olddir[_MAX_DIR];
@@ -309,6 +307,7 @@ const char **argv;
 static void
 li(dirname, lflag, vflag, rflag, iflag, rmflag, zeroflag)
 const char *dirname;
+int lflag, vflag, rflag, iflag, rmflag, zeroflag;
 {
 #ifdef	MSDOS
 	register struct direct *dirent;
